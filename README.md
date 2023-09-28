@@ -5,7 +5,6 @@
 
 % Software requirements: Matlab 2013b, Psychtoolbox-3
 
-% gratinggui.m
 % gratinggui.m passes variables to main.m to run behavioral task
 
 % Main.m takes arguments from gratinggui.m to run the behavioral task.
