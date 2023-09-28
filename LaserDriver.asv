@@ -1,0 +1,256 @@
+function varargout = LaserDriver(varargin)
+% LASERDRIVER M-file for LaserDriver.fig
+%      LASERDRIVER, by itself, creates a new LASERDRIVER or raises the existing
+%      singleton*.
+%
+%      H = LASERDRIVER returns the handle to a new LASERDRIVER or the handle to
+%      the existing singleton*.
+%
+%      LASERDRIVER('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in LASERDRIVER.M with the given input arguments.
+%
+%      LASERDRIVER('Property','Value',...) creates a new LASERDRIVER or raises the
+%      existing singleton*.  Starting from the left, property value pairs are
+%      applied to the GUI before LaserDriver_OpeningFcn gets called.  An
+%      unrecognized property name or invalid value makes property application
+%      stop.  All inputs are passed to LaserDriver_OpeningFcn via varargin.
+%
+%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
+%      instance to run (singleton)".
+%
+% See also: GUIDE, GUIDATA, GUIHANDLES
+
+% Edit the above text to modify the response to help LaserDriver
+
+% Last Modified by GUIDE v2.5 21-Mar-2013 18:32:14
+
+% Begin initialization code - DO NOT EDIT
+gui_Singleton = 1;
+gui_State = struct('gui_Name',       mfilename, ...
+                   'gui_Singleton',  gui_Singleton, ...
+                   'gui_OpeningFcn', @LaserDriver_OpeningFcn, ...
+                   'gui_OutputFcn',  @LaserDriver_OutputFcn, ...
+                   'gui_LayoutFcn',  [] , ...
+                   'gui_Callback',   []);
+if nargin && ischar(varargin{1})
+    gui_State.gui_Callback = str2func(varargin{1});
+end
+
+if nargout
+    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+else
+    gui_mainfcn(gui_State, varargin{:});
+end
+% End initialization code - DO NOT EDIT
+
+
+% --- Executes just before LaserDriver is made visible.
+function LaserDriver_OpeningFcn(hObject, eventdata, handles, varargin)
+% This function has no output args, see OutputFcn.
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% varargin   command line arguments to LaserDriver (see VARARGIN)
+
+% Choose default command line output for LaserDriver
+handles.output = hObject;
+
+% Update handles structure
+guidata(hObject, handles);
+
+% UIWAIT makes LaserDriver wait for user response (see UIRESUME)
+% uiwait(handles.figure1);
+
+
+% --- Outputs from this function are returned to the command line.
+function varargout = LaserDriver_OutputFcn(hObject, eventdata, handles) 
+% varargout  cell array for returning output args (see VARARGOUT);
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Get default command line output from handles structure
+varargout{1} = handles.output;
+
+
+% --- Executes on button press in StartPushButton.
+function StartPushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to StartPushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if (~isempty(daqfind))
+    stop(daqfind)
+end
+
+ao = analogoutput('nidaq','Dev1');
+addchannel(ao,[2 3]);
+set(ao, 'SampleRate', 10000);
+set(ao.Channel, 'UnitsRange', [-5 5]);
+set(ao, 'TriggerType', 'Manual');
+set(ao, 'RepeatOutput', inf);
+
+t = linspace(0,2*pi,10000);
+z=zeros(1,10000);
+
+
+PulseFreq = str2double (get(handles.FrequencyEdit,'String'));
+PulseIntensity = 5 * (str2double (get(handles.IntensityEdit,'String'))/100);
+PulseDuration = PulseFreq*(str2double (get(handles.PulseDurEdit,'String'))*1e-1);
+
+if (get(handles.BlueButton,'Value') == get(handles.BlueButton,'Max'))
+    Blue= PulseIntensity*(square(PulseFreq*t,PulseDuration)+1); 
+else
+    Blue = z ; 
+end
+
+if (get(handles.GreenButton,'Value') == get(handles.GreenButton,'Max'))
+    Green= PulseIntensity*(square(PulseFreq*t,PulseDuration)+1);
+else
+    Green = z;
+end
+Run = 0
+if (get(handles.BallTrackButton,'Value') == get(handles.BallTrackButton,'Max')),
+    set(ao, 'RepeatOutput', 1);
+   while get(handles.BallTrackButton,'Value') == get(handles.BallTrackButton,'Max'),
+    Run = MovementTracking;
+    if Run == 1
+        putdata(ao, [Blue' Green']),
+    else
+        putdata(ao, [z' z']);
+        
+    end
+        start (ao);
+        trigger (ao);
+        %pause (0.1)
+     stop (ao);
+   end
+else
+putdata(ao, [Blue' Green']);
+start (ao);
+trigger (ao),
+end
+
+
+
+
+
+function FrequencyEdit_Callback(hObject, eventdata, handles)
+% hObject    handle to FrequencyEdit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of FrequencyEdit as text
+%        str2double(get(hObject,'String')) returns contents of FrequencyEdit as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function FrequencyEdit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to FrequencyEdit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function PulseDurEdit_Callback(hObject, eventdata, handles)
+% hObject    handle to PulseDurEdit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of PulseDurEdit as text
+%        str2double(get(hObject,'String')) returns contents of PulseDurEdit as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function PulseDurEdit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PulseDurEdit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in StopButton.
+function StopButton_Callback(hObject, eventdata, handles)
+% hObject    handle to StopButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if (~isempty(daqfind))
+    stop(daqfind)
+end
+
+ao = analogoutput('nidaq','Dev1');
+addchannel(ao,[2 3]);
+set(ao, 'SampleRate', 10000);
+set(ao.Channel, 'UnitsRange', [-5 5]);
+set(ao, 'TriggerType', 'Manual');
+set(ao, 'RepeatOutput', inf);
+
+stop (ao);
+z=zeros(1,10000);
+
+putdata(ao, [z' z']);
+start (ao);
+trigger (ao);
+stop (ao);
+delete (ao);
+
+
+function IntensityEdit_Callback(hObject, eventdata, handles)
+% hObject    handle to IntensityEdit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of IntensityEdit as text
+%        str2double(get(hObject,'String')) returns contents of IntensityEdit as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function IntensityEdit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to IntensityEdit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in BlueButton.
+function BlueButton_Callback(hObject, eventdata, handles)
+% hObject    handle to BlueButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of BlueButton
+
+
+% --- Executes on button press in GreenButton.
+function GreenButton_Callback(hObject, eventdata, handles)
+% hObject    handle to GreenButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of GreenButton
+
+
+% --- Executes on button press in BallTrackButton.
+function BallTrackButton_Callback(hObject, eventdata, handles)
+% hObject    handle to BallTrackButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of BallTrackButton
+
+
