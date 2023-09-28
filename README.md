@@ -1,8 +1,9 @@
 # AttentionTask
-% Go/No-Go audio-visual task 
+% Go/No-Go Audio-visual task 
+
 % WRITTEN BY MICKY EINSTEIN - einsteim@ucla.edu
 
-requirements Matlab 2013b
+% Sofware requirements Matlab 2013b
 
 % gratinggui.m
 % gratinggui.m passes variables to main.m to run behavioral task
